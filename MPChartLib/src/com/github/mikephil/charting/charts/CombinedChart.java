@@ -11,13 +11,13 @@ import com.github.mikephil.charting.data.CandleData;
 import com.github.mikephil.charting.data.CombinedData;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.ScatterData;
+import com.github.mikephil.charting.highlight.CombinedHighlighter;
 import com.github.mikephil.charting.interfaces.BarDataProvider;
 import com.github.mikephil.charting.interfaces.BubbleDataProvider;
 import com.github.mikephil.charting.interfaces.CandleDataProvider;
 import com.github.mikephil.charting.interfaces.LineDataProvider;
 import com.github.mikephil.charting.interfaces.ScatterDataProvider;
 import com.github.mikephil.charting.renderer.CombinedChartRenderer;
-import com.github.mikephil.charting.utils.FillFormatter;
 
 /**
  * This chart class allows the combination of lines, bars, scatter and candle
@@ -28,9 +28,6 @@ import com.github.mikephil.charting.utils.FillFormatter;
 public class CombinedChart extends BarLineChartBase<CombinedData> implements LineDataProvider,
         BarDataProvider, ScatterDataProvider, CandleDataProvider, BubbleDataProvider {
 
-    /** the fill-formatter used for determining the position of the fill-line */
-    protected FillFormatter mFillFormatter;
-
     /** flag that enables or disables the highlighting arrow */
     private boolean mDrawHighlightArrow = false;
 
@@ -39,12 +36,6 @@ public class CombinedChart extends BarLineChartBase<CombinedData> implements Lin
      * their top
      */
     private boolean mDrawValueAboveBar = true;
-
-    /**
-     * if set to true, all values of a stack are drawn individually, and not
-     * just their sum
-     */
-    private boolean mDrawValuesForWholeStack = true;
 
     /**
      * if set to true, a grey area is drawn behind each bar that indicates the
@@ -80,7 +71,8 @@ public class CombinedChart extends BarLineChartBase<CombinedData> implements Lin
     protected void init() {
         super.init();
 
-        mFillFormatter = new DefaultFillFormatter();
+        mHighlighter = new CombinedHighlighter(this);
+
         // mRenderer = new CombinedChartRenderer(this, mAnimator,
         // mViewPortHandler);
     }
@@ -107,29 +99,18 @@ public class CombinedChart extends BarLineChartBase<CombinedData> implements Lin
                         mXChartMax = xmax;
                 }
             }
-
-            mDeltaX = Math.abs(mXChartMax - mXChartMin);
         }
+
+        mDeltaX = Math.abs(mXChartMax - mXChartMin);
     }
 
     @Override
     public void setData(CombinedData data) {
+        mData = null;
+        mRenderer = null;
         super.setData(data);
         mRenderer = new CombinedChartRenderer(this, mAnimator, mViewPortHandler);
         mRenderer.initBuffers();
-    }
-
-    public void setFillFormatter(FillFormatter formatter) {
-
-        if (formatter == null)
-            formatter = new DefaultFillFormatter();
-        else
-            mFillFormatter = formatter;
-    }
-
-    @Override
-    public FillFormatter getFillFormatter() {
-        return mFillFormatter;
     }
 
     @Override
@@ -182,11 +163,6 @@ public class CombinedChart extends BarLineChartBase<CombinedData> implements Lin
         return mDrawHighlightArrow;
     }
 
-    @Override
-    public boolean isDrawValuesForWholeStackEnabled() {
-        return mDrawValuesForWholeStack;
-    }
-
     /**
      * set this to true to draw the highlightning arrow
      * 
@@ -206,15 +182,6 @@ public class CombinedChart extends BarLineChartBase<CombinedData> implements Lin
         mDrawValueAboveBar = enabled;
     }
 
-    /**
-     * if set to true, all values of a stack are drawn individually, and not
-     * just their sum
-     * 
-     * @param enabled
-     */
-    public void setDrawValuesForWholeStack(boolean enabled) {
-        mDrawValuesForWholeStack = enabled;
-    }
 
     /**
      * If set to true, a grey area is drawn behind each bar that indicates the

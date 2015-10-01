@@ -33,16 +33,17 @@ import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.data.ChartData;
 import com.github.mikephil.charting.data.DataSet;
 import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.highlight.ChartHighlighter;
 import com.github.mikephil.charting.interfaces.ChartInterface;
 import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.github.mikephil.charting.listener.OnChartGestureListener;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.renderer.DataRenderer;
 import com.github.mikephil.charting.renderer.LegendRenderer;
-import com.github.mikephil.charting.utils.DefaultValueFormatter;
-import com.github.mikephil.charting.utils.Highlight;
+import com.github.mikephil.charting.formatter.DefaultValueFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.Utils;
-import com.github.mikephil.charting.utils.ValueFormatter;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 
 import java.io.File;
@@ -143,6 +144,8 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
 
     /** object responsible for rendering the data */
     protected DataRenderer mRenderer;
+
+    protected ChartHighlighter mHighlighter;
 
     /** object that manages the bounds and drawing constraints of the chart */
     protected ViewPortHandler mViewPortHandler;
@@ -296,6 +299,7 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     public void clear() {
         mData = null;
         mDataNotSet = true;
+        mIndicesToHightlight = null;
         invalidate();
     }
 
@@ -329,7 +333,9 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
 
     /**
      * Lets the chart know its underlying data has changed and performs all
-     * necessary recalculations.
+     * necessary recalculations. It is crucial that this method is called
+     * everytime data is changed dynamically. Not calling this method can lead
+     * to crashes or unexpected behaviour.
      */
     public abstract void notifyDataSetChanged();
 
@@ -366,13 +372,6 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
 
     /** flag that indicates if offsets calculation has already been done or not */
     private boolean mOffsetsCalculated = false;
-
-    /**
-     * Bitmap object used for drawing. This is necessary because hardware
-     * acceleration uses OpenGL which only allows a specific texture size to be
-     * drawn on the canvas directly.
-     **/
-    protected Bitmap mDrawBitmap;
 
     /** paint object used for drawing the bitmap */
     protected Paint mDrawPaint;
@@ -442,11 +441,11 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
      * array of Highlight objects that reference the highlighted slices in the
      * chart
      */
-    protected Highlight[] mIndicesToHightlight = new Highlight[0];
+    protected Highlight[] mIndicesToHightlight;
 
     /**
-     * Returns the array of currently highlighted values. This might be null or
-     * empty if nothing is highlighted.
+     * Returns the array of currently highlighted values. This might a null or
+     * empty array if nothing is highlighted.
      * 
      * @return
      */
@@ -584,8 +583,9 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
 
         for (int i = 0; i < mIndicesToHightlight.length; i++) {
 
-            int xIndex = mIndicesToHightlight[i].getXIndex();
-            int dataSetIndex = mIndicesToHightlight[i].getDataSetIndex();
+            Highlight highlight = mIndicesToHightlight[i];
+            int xIndex = highlight.getXIndex();
+            int dataSetIndex = highlight.getDataSetIndex();
 
             if (xIndex <= mDeltaX && xIndex <= mDeltaX * mAnimator.getPhaseX()) {
 
@@ -595,14 +595,14 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
                 if (e == null || e.getXIndex() != mIndicesToHightlight[i].getXIndex())
                     continue;
 
-                float[] pos = getMarkerPosition(e, dataSetIndex);
+                float[] pos = getMarkerPosition(e, highlight);
 
                 // check bounds
                 if (!mViewPortHandler.isInBounds(pos[0], pos[1]))
                     continue;
 
                 // callbacks to update the content
-                mMarkerView.refreshContent(e, dataSetIndex);
+                mMarkerView.refreshContent(e, highlight);
 
                 // mMarkerView.measure(MeasureSpec.makeMeasureSpec(0,
                 // MeasureSpec.UNSPECIFIED),
@@ -630,11 +630,11 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
      * Returns the actual position in pixels of the MarkerView for the given
      * Entry in the given DataSet.
      *
-     * @param xIndex
-     * @param dataSetIndex
+     * @param e
+     * @param highlight
      * @return
      */
-    protected abstract float[] getMarkerPosition(Entry e, int dataSetIndex);
+    protected abstract float[] getMarkerPosition(Entry e, Highlight highlight);
 
     /**
      * ################ ################ ################ ################
@@ -899,15 +899,6 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     }
 
     /**
-     * returns the total value (sum) of all y-values across all DataSets
-     *
-     * @return
-     */
-    public float getYValueSum() {
-        return mData.getYValueSum();
-    }
-
-    /**
      * returns the current y-max value across all DataSets
      *
      * @return
@@ -941,31 +932,7 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     }
 
     /**
-     * returns the average value of all values the chart holds
-     *
-     * @return
-     */
-    public float getAverage() {
-        return getYValueSum() / mData.getYValCount();
-    }
-
-    /**
-     * returns the average value for a specific DataSet (with a specific label)
-     * in the chart
-     *
-     * @param dataSetLabel
-     * @return
-     */
-    public float getAverage(String dataSetLabel) {
-
-        DataSet<? extends Entry> ds = mData.getDataSetByLabel(dataSetLabel, true);
-
-        return ds.getYValueSum()
-                / ds.getEntryCount();
-    }
-
-    /**
-     * returns the total number of values the chart holds (across all DataSets)
+     * Returns the total number of (y) values the chart holds (across all DataSets).
      *
      * @return
      */
@@ -1121,8 +1088,8 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     }
 
     /**
-     * Set this to true to enable logcat outputs for the chart. Default:
-     * disabled
+     * Set this to true to enable logcat outputs for the chart. Beware that
+     * logcat output decreases rendering performance. Default: disabled.
      *
      * @param enabled
      */
@@ -1590,12 +1557,7 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
             Log.i(LOG_TAG, "OnSizeChanged()");
 
         if (w > 0 && h > 0 && w < 10000 && h < 10000) {
-            // create a new bitmap with the new dimensions
 
-            if (mDrawBitmap != null)
-                mDrawBitmap.recycle();
-
-            mDrawBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_4444);
             mViewPortHandler.setChartDimens(w, h);
 
             if (mLogEnabled)

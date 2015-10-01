@@ -18,8 +18,9 @@ import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
-import com.github.mikephil.charting.utils.Highlight;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 
 import java.util.List;
@@ -63,6 +64,7 @@ public class PieChartRenderer extends DataRenderer {
         mTransparentCirclePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mTransparentCirclePaint.setColor(Color.WHITE);
         mTransparentCirclePaint.setStyle(Style.FILL);
+        mTransparentCirclePaint.setAlpha(100);
 
         mCenterTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         mCenterTextPaint.setColor(Color.BLACK);
@@ -116,7 +118,7 @@ public class PieChartRenderer extends DataRenderer {
 
         for (PieDataSet set : pieData.getDataSets()) {
 
-            if (set.isVisible())
+            if (set.isVisible() && set.getEntryCount() > 0)
                 drawDataSet(c, set);
         }
     }
@@ -188,10 +190,15 @@ public class PieChartRenderer extends DataRenderer {
             // apply the text-styling defined by the DataSet
             applyValueTextStyle(dataSet);
 
+            float lineHeight = Utils.calcTextHeight(mValuePaint, "Q")
+                    + Utils.convertDpToPixel(4f);
+
             List<Entry> entries = dataSet.getYVals();
 
             for (int j = 0, maxEntry = Math.min(
                     (int) Math.ceil(entries.size() * mAnimator.getPhaseX()), entries.size()); j < maxEntry; j++) {
+
+                Entry entry = entries.get(j);
 
                 // offset needed to center the drawn text in the slice
                 float offset = drawAngles[cnt] / 2;
@@ -199,25 +206,23 @@ public class PieChartRenderer extends DataRenderer {
                 // calculate the text position
                 float x = (float) (r
                         * Math.cos(Math.toRadians((rotationAngle + absoluteAngles[cnt] - offset)
-                                * mAnimator.getPhaseY())) + center.x);
+                        * mAnimator.getPhaseY())) + center.x);
                 float y = (float) (r
                         * Math.sin(Math.toRadians((rotationAngle + absoluteAngles[cnt] - offset)
                                 * mAnimator.getPhaseY())) + center.y);
 
-                float value = mChart.isUsePercentValuesEnabled() ? entries.get(j).getVal()
-                        / mChart.getYValueSum() * 100f : entries.get(j).getVal();
+                float value = mChart.isUsePercentValuesEnabled() ? entry.getVal()
+                        / data.getYValueSum() * 100f : entry.getVal();
 
-                String val = dataSet.getValueFormatter().getFormattedValue(value);
-
-                float lineHeight = Utils.calcTextHeight(mValuePaint, val)
-                        + Utils.convertDpToPixel(4f);
+                ValueFormatter formatter = dataSet.getValueFormatter();
 
                 boolean drawYVals = dataSet.isDrawValuesEnabled();
 
                 // draw everything, depending on settings
                 if (drawXVals && drawYVals) {
 
-                    c.drawText(val, x, y, mValuePaint);
+                    drawValue(c, formatter, value, entry, 0, x, y);
+
                     if (j < data.getXValCount())
                         c.drawText(data.getXVals().get(j), x, y + lineHeight,
                                 mValuePaint);
@@ -227,7 +232,7 @@ public class PieChartRenderer extends DataRenderer {
                         c.drawText(data.getXVals().get(j), x, y + lineHeight / 2f, mValuePaint);
                 } else if (!drawXVals && drawYVals) {
 
-                    c.drawText(val, x, y + lineHeight / 2f, mValuePaint);
+                    drawValue(c, formatter, value, entry, 0, x, y + lineHeight / 2f);
                 }
 
                 cnt++;
@@ -260,16 +265,16 @@ public class PieChartRenderer extends DataRenderer {
             if (transparentCircleRadius > holeRadius && mAnimator.getPhaseX() >= 1f
                     && mAnimator.getPhaseY() >= 1f) {
 
-                int color = mTransparentCirclePaint.getColor();
+                //int color = mTransparentCirclePaint.getColor();
 
                 // make transparent
-                mTransparentCirclePaint.setColor(color & 0x60FFFFFF);
+                //mTransparentCirclePaint.setColor(color & 0x60FFFFFF);
 
                 // draw the transparent-circle
                 mBitmapCanvas.drawCircle(center.x, center.y,
                         radius / 100 * transparentCircleRadius, mTransparentCirclePaint);
 
-                mTransparentCirclePaint.setColor(color);
+                //mTransparentCirclePaint.setColor(color);
             }
 
             // draw the hole-circle

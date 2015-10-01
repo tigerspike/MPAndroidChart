@@ -26,8 +26,8 @@ public class HorizontalBarBuffer extends BarBuffer {
             BarEntry e = entries.get(i);
 
             // calculate the x-position, depending on datasetcount
-            float x = e.getXIndex() + i * dataSetOffset + mDataSetIndex
-                    + mGroupSpace * i + groupSpaceHalf;
+            float x = e.getXIndex() + e.getXIndex() * dataSetOffset + mDataSetIndex
+                    + mGroupSpace * e.getXIndex() + groupSpaceHalf;
             float y = e.getVal();
             float[] vals = e.getVals();
 
@@ -55,7 +55,7 @@ public class HorizontalBarBuffer extends BarBuffer {
             } else {
 
                 float posY = 0f;
-                float negY = 0f;
+                float negY = -e.getNegativeSum();
                 float yStart = 0f;
 
                 // fill the stack
@@ -69,8 +69,8 @@ public class HorizontalBarBuffer extends BarBuffer {
                         posY = yStart;
                     } else {
                         y = negY;
-                        yStart = negY + value;
-                        negY = yStart;
+                        yStart = negY + Math.abs(value);
+                        negY += Math.abs(value);
                     }
 
                     float bottom = x - barWidth + barSpaceHalf;

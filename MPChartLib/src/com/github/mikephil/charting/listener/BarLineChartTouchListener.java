@@ -5,21 +5,18 @@ import android.annotation.SuppressLint;
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.util.Log;
-import android.view.GestureDetector;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
-import android.view.View.OnTouchListener;
 import android.view.animation.AnimationUtils;
 
 import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.HorizontalBarChart;
-import com.github.mikephil.charting.data.BarLineScatterCandleData;
-import com.github.mikephil.charting.data.BarLineScatterCandleDataSet;
+import com.github.mikephil.charting.data.BarLineScatterCandleBubbleData;
+import com.github.mikephil.charting.data.BarLineScatterCandleBubbleDataSet;
 import com.github.mikephil.charting.data.DataSet;
 import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.utils.Highlight;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 
@@ -29,7 +26,7 @@ import com.github.mikephil.charting.utils.ViewPortHandler;
  * 
  * @author Philipp Jahoda
  */
-public class BarLineChartTouchListener extends ChartTouchListener<BarLineChartBase<? extends BarLineScatterCandleData<? extends BarLineScatterCandleDataSet<? extends Entry>>>> {
+public class BarLineChartTouchListener extends ChartTouchListener<BarLineChartBase<? extends BarLineScatterCandleBubbleData<? extends BarLineScatterCandleBubbleDataSet<? extends Entry>>>> {
 
     /** the original touch-matrix from the chart */
     private Matrix mMatrix = new Matrix();
@@ -56,7 +53,7 @@ public class BarLineChartTouchListener extends ChartTouchListener<BarLineChartBa
     private PointF mDecelerationCurrentPoint = new PointF();
     private PointF mDecelerationVelocity = new PointF();
 
-    public BarLineChartTouchListener(BarLineChartBase<? extends BarLineScatterCandleData<? extends BarLineScatterCandleDataSet<? extends Entry>>> chart, Matrix touchMatrix) {
+    public BarLineChartTouchListener(BarLineChartBase<? extends BarLineScatterCandleBubbleData<? extends BarLineScatterCandleBubbleDataSet<? extends Entry>>> chart, Matrix touchMatrix) {
         super(chart);
         this.mMatrix = touchMatrix;
     }

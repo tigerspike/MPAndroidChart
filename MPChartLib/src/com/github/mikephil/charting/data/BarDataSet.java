@@ -6,7 +6,7 @@ import android.graphics.Color;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BarDataSet extends BarLineScatterCandleDataSet<BarEntry> {
+public class BarDataSet extends BarLineScatterCandleBubbleDataSet<BarEntry> {
 
     /** space indicator between the bars 0.1f == 10 % */
     private float mBarSpace = 0.15f;
@@ -96,6 +96,56 @@ public class BarDataSet extends BarLineScatterCandleDataSet<BarEntry> {
 
             if (vals != null && vals.length > mStackSize)
                 mStackSize = vals.length;
+        }
+    }
+
+    @Override
+    protected void calcMinMax(int start, int end) {
+        final int yValCount = mYVals.size();
+
+        if (yValCount == 0)
+            return;
+
+        int endValue;
+
+        if (end == 0 || end >= yValCount)
+            endValue = yValCount - 1;
+        else
+            endValue = end;
+
+        mLastStart = start;
+        mLastEnd = endValue;
+
+        mYMin = Float.MAX_VALUE;
+        mYMax = -Float.MAX_VALUE;
+
+        for (int i = start; i <= endValue; i++) {
+
+            BarEntry e = mYVals.get(i);
+
+            if (e != null && !Float.isNaN(e.getVal())) {
+
+                if(e.getVals() == null) {
+
+                    if (e.getVal() < mYMin)
+                        mYMin = e.getVal();
+
+                    if (e.getVal() > mYMax)
+                        mYMax = e.getVal();
+                } else {
+
+                    if (-e.getNegativeSum() < mYMin)
+                        mYMin = -e.getNegativeSum();
+
+                    if (e.getPositiveSum() > mYMax)
+                        mYMax = e.getPositiveSum();
+                }
+            }
+        }
+
+        if (mYMin == Float.MAX_VALUE) {
+            mYMin = 0.f;
+            mYMax = 0.f;
         }
     }
 

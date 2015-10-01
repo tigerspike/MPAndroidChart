@@ -7,6 +7,7 @@ import android.widget.TextView;
 import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.data.CandleEntry;
 import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.Utils;
 import com.xxmassdeveloper.mpchartexample.R;
 
@@ -28,7 +29,7 @@ public class MyMarkerView extends MarkerView {
     // callbacks everytime the MarkerView is redrawn, can be used to update the
     // content (user-interface)
     @Override
-    public void refreshContent(Entry e, int dataSetIndex) {
+    public void refreshContent(Entry e, Highlight highlight) {
 
         if (e instanceof CandleEntry) {
 
